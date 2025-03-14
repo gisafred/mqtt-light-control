@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Light Control</title>
+    <link rel="stylesheet" href="./assets/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>💡 Light Control</h1>
+        <div class="button-group">
+            <button id="onButton" class="btn on" disabled>Turn ON</button>
+            <button id="offButton" class="btn off" disabled>Turn OFF</button>
+        </div>
+        <div class="status">
+            <p>Status: <span id="status">Connecting to broker...</span></p>
+        </div>
+    </div>
+
+    <script>
+        // ✅ Correct WebSocket URL format
+        const brokerUrl = "wss://e88a7ca71ee34310ae9e6021e76b8ff7.s1.eu.hivemq.cloud:8884/mqtt"; 
+        const clientId = "webClient_" + Math.random().toString(16).substr(2, 8);
+        const topic = "/student_group/light_control";
+
+        const credentials = {
+            username : "FredCluster",
+            password : "Gisa@123"
+        }
+
+        // ✅ Correct client initialization
+        const client = new Paho.MQTT.Client(brokerUrl, clientId);
+
+        client.onConnectionLost = (responseObject) => {
+            console.log("Connection lost:", responseObject.errorMessage);
+            document.getElementById("status").textContent = "Disconnected";
+            document.getElementById("onButton").disabled = true;
+            document.getElementById("offButton").disabled = true;
+        };
+
+        client.onMessageArrived = (message) => {
+            console.log("Message received:", message.payloadString);
+        };
+
+        client.connect({
+            onSuccess: () => {
+                console.log("✅ Connected to MQTT broker");
+                document.getElementById("status").textContent = "Connected";
+                document.getElementById("onButton").disabled = false;
+                document.getElementById("offButton").disabled = false;
+                client.subscribe(topic);
+            },
+            onFailure: (err) => {
+                console.log("❌ Failed to connect:", err.errorMessage);
+                document.getElementById("status").textContent = "Failed to connect";
+            },
+            userName: "FredCluster",  // Check your credentials
+            password: "Gisa@123",  // Check your credentials
+            useSSL: true, // Required for HiveMQ Cloud
+        });
+
+        // Button Event Listeners
+        document.getElementById("onButton").addEventListener("click", () => {
+            const message = new Paho.MQTT.Message("ON");
+            message.destinationName = topic;
+            client.send(message);
+            document.getElementById("status").textContent = "ON";
+            document.getElementById("status").style.color = "#4CAF50"; // Green for ON
+            console.log("Message sent : ", message)
+        });
+
+        document.getElementById("offButton").addEventListener("click", () => {
+            const message = new Paho.MQTT.Message("OFF");
+            message.destinationName = topic;
+            client.send(message);
+            document.getElementById("status").textContent = "OFF";
+            document.getElementById("status").style.color = "#F44336"; // Red for OFF
+            console.log("Message sent : ", message)
+        });
+    </script>
+</body>
+</html>
